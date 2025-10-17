@@ -1,5 +1,5 @@
 ---
-title: "Hw 3 Stat 541 Oct 11, 2024"
+title: "Clustering, how it works"
 author: "Mingzhe Liu"
 format: html
 editor: visual
@@ -443,3 +443,4 @@ plot(silhouette_scores_normalized,
 ```
 
 According to these results, the clusters are poorly separated. The clustering with $K=2$ does not indicates the penguin species.
+
