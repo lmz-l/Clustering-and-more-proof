@@ -1,0 +1,445 @@
+---
+title: "Hw 3 Stat 541 Oct 11, 2024"
+author: "Mingzhe Liu"
+format: html
+editor: visual
+---
+
+## 1
+
+### (a)
+
+$$
+\text{MSE}[n] = \frac{1}{n} \sum_{i=1}^{n} (X_i - \bar{X}_{[n]})^T (X_i - \bar{X}_{[n]})
+$$ where $\bar{X}_{[n]} = \frac{1}{n} \sum_{i=1}^{n} X_i$.
+
+The data is partitioned into $K$ clusters, $C_1, C_2, \dots, C_K$. The mean of cluster $C_\ell$ is given by
+
+$$
+\bar{X}_{C_\ell} = \frac{1}{|C_\ell|} \sum_{i \in C_\ell} X_i
+$$
+
+We can rewrite the total MSE by summing the contributions from each cluster:
+
+$$
+\text{MSE}[n] = \frac{1}{n} \sum_{\ell=1}^{K} \sum_{i \in C_\ell} (X_i - \bar{X}_{[n]})^T (X_i - \bar{X}_{[n]})
+$$
+
+Let
+
+$$
+X_i - \bar{X}_{[n]} = (X_i - \bar{X}_{C_\ell}) + (\bar{X}_{C_\ell} - \bar{X}_{[n]})
+$$ Substitute this into the equation for $\text{MSE}[n]$:
+
+$$
+\text{MSE}[n] = \frac{1}{n} \sum_{\ell=1}^{K} \sum_{i \in C_\ell} \left[ (X_i - \bar{X}_{C_\ell}) + (\bar{X}_{C_\ell} - \bar{X}_{[n]}) \right]^T \left[ (X_i - \bar{X}_{C_\ell}) + (\bar{X}_{C_\ell} - \bar{X}_{[n]}) \right]
+$$
+
+By expansion
+
+$$
+\text{MSE}[n] = \frac{1}{n} \sum_{\ell=1}^{K} \sum_{i \in C_\ell} \left[ (X_i - \bar{X}_{C_\ell})^T (X_i - \bar{X}_{C_\ell}) + 2(X_i - \bar{X}_{C_\ell})^T (\bar{X}_{C_\ell} - \bar{X}_{[n]}) + (\bar{X}_{C_\ell} - \bar{X}_{[n]})^T (\bar{X}_{C_\ell} - \bar{X}_{[n]}) \right]
+$$
+
+Since $\sum_{i \in C_\ell} (X_i - \bar{X}_{C_\ell}) = 0$
+
+$$
+\text{MSE}[n] = \frac{1}{n} \sum_{\ell=1}^{K} \sum_{i \in C_\ell} (X_i - \bar{X}_{C_\ell})^T (X_i - \bar{X}_{C_\ell}) + \frac{1}{n} \sum_{\ell=1}^{K} \sum_{i \in C_\ell} (\bar{X}_{C_\ell} - \bar{X}_{[n]})^T (\bar{X}_{C_\ell} - \bar{X}_{[n]})
+$$
+
+In the first term,
+
+$$
+\sum_{i \in C_\ell} (X_i - \bar{X}_{C_\ell})^T (X_i - \bar{X}_{C_\ell}) = |C_\ell| \cdot \text{MSE}(C_\ell)
+$$
+
+Thus, the first part becomes:
+
+$$
+\frac{1}{n} \sum_{\ell=1}^{K} |C_\ell| \cdot \text{MSE}(C_\ell)
+$$
+
+The second term is
+
+$$
+\frac{1}{n} \sum_{\ell=1}^{K} |C_\ell| (\bar{X}_{C_\ell} - \bar{X}_{[n]})^T (\bar{X}_{C_\ell} - \bar{X}_{[n]})
+$$
+
+So
+
+$$
+\text{MSE}[n] = \sum_{\ell=1}^{K} \frac{|C_\ell|}{n} \text{MSE}(C_\ell) + \sum_{\ell=1}^{K} \frac{|C_\ell|}{n} \left( \bar{X}_{C_\ell} - \bar{X}_{[n]} \right)^T \left( \bar{X}_{C_\ell} - \bar{X}_{[n]} \right)
+$$
+
+### (b)
+
+```{r}
+penguins_data <- read.csv("C:/Users/16339/Downloads/penguins_data.csv")
+
+penguins_species <- read.csv("C:/Users/16339/Downloads/penguins_species.csv")
+
+library(cluster)
+
+penguins_scaled <- scale(penguins_data[,-1])
+
+ch_index = function(kmeans_out) {
+    K = length(kmeans_out$size)       
+    n = sum(kmeans_out$size)           
+    (kmeans_out$betweenss / (K - 1)) / 
+    (kmeans_out$tot.withinss / (n - K))
+}
+
+
+ch_scores <- numeric()
+
+for (k in 2:10) {
+    kmeans_result <- kmeans(penguins_scaled, centers = k, nstart = 25)
+   
+    ch_scores[k] <- ch_index(kmeans_result)
+}
+
+plot(2:10, ch_scores[2:10], type = "b", pch = 19, frame = FALSE, 
+     xlab = "Number of Clusters K", 
+     ylab = "Calinski-Harabasz Index",
+     main = "CH Index for K-means clustering on Penguins Data")
+```
+
+
+
+According to the result of Calinski-Harabasz, when we choose 6 clusters, CH index is maximized.
+
+```{r}
+k_optimal <- 6
+
+kmeans_result_optimal <- kmeans(penguins_scaled, centers = k_optimal, nstart = 25)
+
+penguins_data$cluster <- kmeans_result_optimal$cluster
+
+table(penguins_data$cluster)
+
+
+```
+```{r}
+table(penguins_data$cluster, penguins_species$species)
+
+```
+The result shows clusters align well with penguin species and sex, supporting that 6 clusters effectively capture the structure and differences.
+
+
+## 2
+
+```{r}
+penguins_dist_mat <- read.csv("C:/Users/16339/Downloads/penguins_dist_mat.csv")
+
+```
+
+```{r}
+penguins_dist <- penguins_dist_mat[,-1]
+
+penguins_dist <- as.dist(penguins_dist)
+
+hc_single <- hclust(penguins_dist, method = "single")
+hc_complete <- hclust(penguins_dist, method = "complete")
+hc_average <- hclust(penguins_dist, method = "average")
+hc_centroid <- hclust(penguins_dist, method = "centroid")
+hc_ward <- hclust(penguins_dist, method = "ward.D2")
+
+get_silhouette_score <- function(hc_result, dist_matrix, k) {
+    cluster_assignments <- cutree(hc_result, k = k)  
+    sil <- silhouette(cluster_assignments, dist_matrix)
+    mean(sil[, 3])
+}
+
+k_values <- 2:10 
+sil_scores_single <- sapply(k_values, function(k) get_silhouette_score(hc_single, penguins_dist, k))
+sil_scores_complete <- sapply(k_values, function(k) get_silhouette_score(hc_complete, penguins_dist, k))
+sil_scores_average <- sapply(k_values, function(k) get_silhouette_score(hc_average, penguins_dist, k))
+sil_scores_centroid <- sapply(k_values, function(k) get_silhouette_score(hc_centroid, penguins_dist, k))
+sil_scores_ward <- sapply(k_values, function(k) get_silhouette_score(hc_ward, penguins_dist, k))
+
+
+
+
+best_linkage_method <- which.max(c(max(sil_scores_single), max(sil_scores_complete), 
+                                   max(sil_scores_average), max(sil_scores_ward), max(sil_scores_centroid)))
+
+
+c(max(sil_scores_single), max(sil_scores_complete), 
+                max(sil_scores_average), max(sil_scores_ward), max(sil_scores_centroid))
+
+
+
+```
+The clusters show separation with silhouette scores around 0.56, suggesting the clusters are not perfectly separated. This may imply that this does not work with species.
+
+
+
+```{r}
+library(ggplot2)
+library(reshape2)
+
+
+sil_scores_df <- data.frame(
+  k_values = rep(k_values, 5),  
+  Silhouette_Score = c(sil_scores_single, sil_scores_complete, sil_scores_average, sil_scores_centroid, sil_scores_ward),
+  Method = factor(rep(c("Single", "Complete", "Average", "Centroid", "Ward"), each = length(k_values)),
+                  levels = c("Single", "Complete", "Average", "Centroid", "Ward"))
+)
+
+
+
+ggplot(sil_scores_df, aes(x = k_values, y = Silhouette_Score, color = Method)) +
+  geom_line() + 
+  geom_point(size = 3) +
+  scale_color_manual(values = c("red", "blue", "orange", "pink", "purple")) +  # Add pink for centroid
+  labs(title = "Silhouette Scores for Different Linkage Methods",
+       x = "Number of Clusters K",
+       y = "Silhouette Score") +
+  theme_minimal() +
+  theme(legend.title = element_blank())
+
+
+```
+
+According to the plot and results, the Silhouette maximized when $K=4$ with complete, average and Ward's $D^2$ method.
+
+```{r include=FALSE}
+sil_scores_df <- data.frame(
+  k_values = rep(k_values, 4),
+  Silhouette_Score = c(sil_scores_single, sil_scores_complete, sil_scores_average, sil_scores_ward),
+  Method = factor(rep(c("Single", "Complete", "Average", "Ward"), each = length(k_values)),
+                  levels = c("Single", "Complete", "Average", "Ward"))
+)
+
+ggplot(sil_scores_df, aes(x = k_values, y = Silhouette_Score, color = Method)) +
+  geom_line() + 
+  geom_point(size = 3) +
+  scale_color_manual(values = c("red", "blue", "orange", "purple")) +
+  labs(title = "Silhouette Scores for Different Linkage Methods",
+       x = "Number of Clusters K",
+       y = "Silhouette Score") +
+  theme_minimal() +
+  theme(legend.title = element_blank())
+
+## this one missing centroid.
+
+
+```
+
+
+
+```{r}
+k_optimal <- 4
+
+cluster_assignments_complete <- cutree(hc_complete, k = k_optimal)
+
+plot(hc_complete, main = paste("Dendrogram for Complete Linkage with", k_optimal, "Clusters"), sub = "", xlab = "", ylab = "Height", labels = FALSE)
+
+rect.hclust(hc_complete, k = k_optimal, border = "blue")
+
+cluster_assignments_ward <- cutree(hc_ward, k = k_optimal)
+
+plot(hc_ward, main = paste("Dendrogram for Ward's D2 Linkage with", k_optimal, "Clusters"), sub = "", xlab = "", ylab = "Height" , labels = FALSE)
+
+rect.hclust(hc_ward, k = k_optimal, border = "red")
+
+cluster_assignments_average <- cutree(hc_average, k = k_optimal)
+
+plot(hc_average, main = paste("Dendrogram for Average Linkage with", k_optimal, "Clusters"), sub = "", xlab = "", ylab = "Height" , labels = FALSE)
+
+rect.hclust(hc_average, k = k_optimal, border = "green" )
+```
+
+
+## 3
+
+```{r}
+penguins_weights_mat <- read.csv("C:/Users/16339/Downloads/penguins_weights_mat.csv")
+penguins_weights_mat <- as.matrix(penguins_weights_mat[,-1])
+
+D <- diag(rowSums(penguins_weights_mat))
+
+L_unnormalized <- D - penguins_weights_mat
+
+D_inv_sqrt <- diag(1 / sqrt(diag(D)))
+L_normalized <- diag(nrow(penguins_weights_mat)) - D_inv_sqrt %*% penguins_weights_mat %*% D_inv_sqrt
+
+eig_unnormalized <- eigen(L_unnormalized)
+eig_normalized <- eigen(L_normalized)
+
+
+```
+
+
+
+
+```{r}
+perform_kmeans_on_eigenvectors <- function(eigen_vectors, k) {
+  eigen_subset <- eigen_vectors[, 1:k]
+  kmeans_result <- kmeans(eigen_subset, centers = k, nstart = 25)
+  return(kmeans_result$cluster)
+}
+
+
+custom_silhouette_score <- function(cluster_assignments, similarity_matrix) {
+    n <- nrow(similarity_matrix)
+    silhouette_scores <- numeric(n)
+
+    for (i in 1:n) {
+        own_cluster <- cluster_assignments[i]
+        
+        # Points in the same cluster
+        same_cluster <- which(cluster_assignments == own_cluster)
+        same_cluster <- same_cluster[same_cluster != i]  # Exclude point i itself
+        
+        # Points in other clusters
+        other_clusters <- which(cluster_assignments != own_cluster)
+        
+        # Calculate a(i): Average similarity to points in the same cluster
+        if (length(same_cluster) > 0) {
+            a_i <- mean(similarity_matrix[i, same_cluster])
+        } else {
+            a_i <- 0  # No other points in the same cluster
+        }
+        
+        # Calculate b(i): Highest average similarity to points in any other cluster
+        if (length(other_clusters) > 0) {
+            b_i <- max(sapply(unique(cluster_assignments[other_clusters]), function(cluster) {
+                mean(similarity_matrix[i, which(cluster_assignments == cluster)])
+            }))
+        } else {
+            b_i <- 0
+        }
+
+        # Calculate silhouette score for point i
+        silhouette_scores[i] <- (a_i - b_i ) / max(a_i, b_i, 1e-6)  # Avoid division by zero
+    }
+    
+    # Return the average silhouette score
+    return(mean(silhouette_scores))
+}
+
+
+get_custom_silhouette_score <- function(cluster_assignments, similarity_matrix) {
+    custom_silhouette_score(cluster_assignments, similarity_matrix)
+}
+
+k_values = 2:10
+
+sil_scores_unnormalized <- sapply(k_values, function(k_val) {
+    clusters <- perform_kmeans_on_eigenvectors(eig_unnormalized$vectors, k_val)
+    get_custom_silhouette_score(clusters, penguins_weights_mat)
+})
+
+sil_scores_normalized <- sapply(k_values, function(k_val) {
+    clusters <- perform_kmeans_on_eigenvectors(eig_normalized$vectors, k_val)
+    get_custom_silhouette_score(clusters, penguins_weights_mat)
+})
+
+silhouette_results <- data.frame(
+  K = k_values,
+  Silhouette_Unnormalized = sil_scores_unnormalized,
+  Silhouette_Normalized = sil_scores_normalized
+)
+
+silhouette_results
+
+```
+
+
+
+```{r}
+ggplot(silhouette_results, aes(x = K)) +
+  geom_line(aes(y = Silhouette_Unnormalized, color = "Unnormalized"), size = 1) +
+  geom_point(aes(y = Silhouette_Unnormalized, color = "Unnormalized"), size = 2) +
+  geom_line(aes(y = Silhouette_Normalized, color = "Normalized"), size = 1) +
+  geom_point(aes(y = Silhouette_Normalized, color = "Normalized"), size = 2) +
+  labs(title = "Silhouette Scores for Unnormalized and Normalized Laplacians",
+       x = "Number of Clusters (K)",
+       y = "Silhouette Score") +
+  scale_color_manual(values = c("Unnormalized" = "blue", "Normalized" = "red")) +
+  theme_minimal() +
+  theme(legend.title = element_blank()) +
+  geom_vline(xintercept = silhouette_results$K[which.max(silhouette_results$Silhouette_Unnormalized)], linetype="dashed", color = "blue", size=0.7) +
+  geom_vline(xintercept = silhouette_results$K[which.max(silhouette_results$Silhouette_Normalized)], linetype="dashed", color = "red", size=0.7)
+```
+
+
+```{r}
+
+
+custom_silhouette_score <- function(cluster_assignments, similarity_matrix) {
+    n <- nrow(similarity_matrix)
+    silhouette_scores <- numeric(n)
+
+    for (i in 1:n) {
+        own_cluster <- cluster_assignments[i]
+        
+        # Points in the same cluster
+        same_cluster <- which(cluster_assignments == own_cluster)
+        same_cluster <- same_cluster[same_cluster != i]  # Exclude point i itself
+        
+        # Points in other clusters
+        other_clusters <- which(cluster_assignments != own_cluster)
+        
+        # Calculate a(i): Average similarity to points in the same cluster
+        if (length(same_cluster) > 0) {
+            a_i <- mean(similarity_matrix[i, same_cluster])
+        } else {
+            a_i <- 0  # No other points in the same cluster
+        }
+        
+        # Calculate b(i): Highest average similarity to points in any other cluster
+        if (length(other_clusters) > 0) {
+            b_i <- max(sapply(unique(cluster_assignments[other_clusters]), function(cluster) {
+                mean(similarity_matrix[i, which(cluster_assignments == cluster)])
+            }))
+        } else {
+            b_i <- 0
+        }
+
+        # Calculate silhouette score for point i
+        silhouette_scores[i] <- (a_i - b_i) / max(a_i, b_i, 1e-6)  # Avoid division by zero
+    }
+    
+    # Return the silhouette scores for all points, not just the average
+    return(silhouette_scores)
+}
+
+
+
+
+
+optimal_k_unnormalized <- 2  
+optimal_k_normalized <- 2   
+
+# Perform spectral clustering for both unnormalized and normalized Laplacians
+
+# Unnormalized Laplacian clustering
+clusters_unnormalized <- perform_kmeans_on_eigenvectors(eig_unnormalized$vectors, optimal_k_unnormalized)
+
+# Normalized Laplacian clustering
+clusters_normalized <- perform_kmeans_on_eigenvectors(eig_normalized$vectors, optimal_k_normalized)
+
+silhouette_scores_unnormalized <- custom_silhouette_score(clusters_unnormalized, penguins_weights_mat)
+silhouette_scores_normalized <- custom_silhouette_score(clusters_normalized, penguins_weights_mat)
+
+# Unnormalized Laplacian Silhouette Plot
+plot(silhouette_scores_unnormalized, 
+     type = "h",  # Use "h" to plot vertical lines
+     main = paste("Silhouette Plot for Unnormalized Laplacian with", optimal_k_unnormalized, "Clusters"),
+     xlab = "Data Points", 
+     ylab = "Silhouette Score", 
+     col = clusters_unnormalized)
+
+# Normalized Laplacian Silhouette Plot
+plot(silhouette_scores_normalized, 
+     type = "h",  # Use "h" to plot vertical lines
+     main = paste("Silhouette Plot for Normalized Laplacian with", optimal_k_normalized, "Clusters"),
+     xlab = "Data Points", 
+     ylab = "Silhouette Score", 
+     col = clusters_normalized)
+
+```
+
+According to these results, the clusters are poorly separated. The clustering with $K=2$ does not indicates the penguin species.
